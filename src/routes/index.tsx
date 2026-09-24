@@ -150,7 +150,7 @@ function Index() {
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-base font-bold text-foreground sm:text-lg">{member.name}</span>
-                      <span className="block text-[10px] font-medium text-muted-foreground" dir={isArabic ? "rtl" : "ltr"}>{copy.tap}</span>
+                      <span className="block font-display text-xs font-bold text-muted-foreground" dir={isArabic ? "rtl" : "ltr"}>{copy.tap}</span>
                     </span>
                     <div className="text-right" dir={isArabic ? "rtl" : "ltr"}>
                       <span className="block text-xl font-black text-accent sm:text-2xl">40%</span>
@@ -164,10 +164,10 @@ function Index() {
                       dir={isArabic ? "rtl" : "ltr"}
                       className="mx-3 mb-3 flex items-center justify-between rounded-sm border border-primary/40 bg-rank px-4 py-3 sm:mx-4"
                     >
-                      <span className="text-sm font-bold text-muted-foreground">{copy.debt}</span>
+                      <span className="font-display text-base font-extrabold text-foreground">{copy.debt}</span>
                       <span className="font-display text-2xl font-black text-primary">
                         <span dir="ltr">{member.debt.toLocaleString("en-US")}</span>{" "}
-                        <span className="text-xs text-muted-foreground">{copy.points}</span>
+                        <span className="font-display text-sm font-bold text-foreground">{copy.points}</span>
                       </span>
                     </div>
                   )}

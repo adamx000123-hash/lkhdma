@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import backgroundAsset from "../assets/lkhdma-background.jpeg.asset.json";
 import {
   TIERS,
-  addTierDebt,
+  setPendingTier,
+  getSchedule,
   adminLogin,
   adminLogout,
   getAdminStatus,
@@ -93,7 +94,10 @@ function Login() {
 function Dashboard() {
   const qc = useQueryClient();
   const { data: members } = useSuspenseQuery(membersQuery);
-  const addTier = useServerFn(addTierDebt);
+  const setTier = useServerFn(setPendingTier);
+  const fetchSchedule = useServerFn(getSchedule);
+  const { data: schedule } = useQuery({ queryKey: ["schedule"], queryFn: () => fetchSchedule() });
+  const pending = schedule?.pendingTier ?? null;
   const reduce = useServerFn(reduceDebt);
   const logout = useServerFn(adminLogout);
   const [busyTier, setBusyTier] = useState<number | null>(null);
@@ -101,12 +105,12 @@ function Dashboard() {
   const [amounts, setAmounts] = useState<Record<number, string>>({});
 
   async function onTier(tier: number) {
-    if (!confirm(`إضافة ${TIERS[tier]} نقطة دين لكل الأعضاء (${tier}/15)؟`)) return;
+    const next = pending === tier ? null : tier;
     setBusyTier(tier);
-    await addTier({ data: { tier } });
+    await setTier({ data: { tier: next } });
     setBusyTier(null);
-    setMessage(`تمت إضافة ${TIERS[tier]} نقطة لكل عضو`);
-    qc.invalidateQueries({ queryKey: ["members"] });
+    setMessage(next ? `سيتم إضافة ${TIERS[next]} نقطة لكل عضو تلقائياً عند 00:00 (GMT)` : "تم إلغاء الإضافة المجدولة");
+    qc.invalidateQueries({ queryKey: ["schedule"] });
   }
 
   async function onReduce(id: number) {
@@ -135,7 +139,7 @@ function Dashboard() {
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-lg font-bold text-foreground">عدد المشاركين — يضاف الدين لكل الأعضاء</h2>
+        <h2 className="mb-3 text-lg font-bold text-foreground">عدد المشاركين — يضاف الدين لكل الأعضاء تلقائياً عند 00:00 (GMT)</h2>
         <div className="grid grid-cols-3 gap-3">
           {Object.entries(TIERS).map(([t, pts]) => {
             const tier = Number(t);
@@ -145,7 +149,7 @@ function Dashboard() {
                 type="button"
                 disabled={busyTier !== null}
                 onClick={() => onTier(tier)}
-                className="rounded-md border border-border bg-panel p-4 text-center shadow-panel backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-accent/60 hover:bg-panel-strong disabled:opacity-50"
+                className={`rounded-md border p-4 ${pending === tier ? "border-success bg-success/25 ring-2 ring-success" : "border-border bg-panel"} text-center shadow-panel backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-accent/60 hover:bg-panel-strong disabled:opacity-50`}
               >
                 <span dir="ltr" className="block font-display text-2xl font-black text-foreground">{tier}/15</span>
                 <span dir="ltr" className="block text-sm font-bold text-primary">+{pts.toLocaleString("en-US")}</span>

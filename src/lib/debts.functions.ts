@@ -79,21 +79,24 @@ export const adminLogout = createServerFn({ method: "POST" }).handler(async () =
   return { ok: true };
 });
 
-export const addTierDebt = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ tier: z.number().int().min(7).max(15) }).parse(d))
+export const getSchedule = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.from("debt_schedule").select("pending_tier").eq("id", 1).single();
+  return { pendingTier: (data?.pending_tier as number | null) ?? null };
+});
+
+export const setPendingTier = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ tier: z.number().int().min(7).max(15).nullable() }).parse(d))
   .handler(async ({ data }) => {
     await requireAdmin();
-    const amount = TIERS[data.tier]!;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin.from("members").select("id, debt");
+    const { error } = await supabaseAdmin
+      .from("debt_schedule")
+      .update({ pending_tier: data.tier, updated_at: new Date().toISOString() })
+      .eq("id", 1);
     if (error) throw new Error(error.message);
-    for (const r of rows ?? []) {
-      await supabaseAdmin
-        .from("members")
-        .update({ debt: r.debt + amount, updated_at: new Date().toISOString() })
-        .eq("id", r.id);
-    }
-    return { ok: true, amount };
+    return { ok: true };
   });
 
 export const reduceDebt = createServerFn({ method: "POST" })
