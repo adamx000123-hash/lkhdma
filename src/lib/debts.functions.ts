@@ -41,8 +41,12 @@ async function requireAdmin() {
 }
 
 export const getMembers = createServerFn({ method: "GET" }).handler(async (): Promise<Member[]> => {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-  const sb = createClient(process.env["SUPABASE_URL"]!, key, {
+  const url = process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) {
+    throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel.");
+  }
+  const sb = createClient(url, key, {
     auth: { persistSession: false },
     global: {
       fetch: (input, init) => {
