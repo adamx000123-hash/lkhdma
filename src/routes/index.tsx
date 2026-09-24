@@ -1,27 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Languages } from "lucide-react";
 import { useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { getMembers } from "../lib/debts.functions";
 import { Button } from "../components/ui/button";
 import backgroundAsset from "../assets/lkhdma-background.jpeg.asset.json";
 import logoAsset from "../assets/lkhdma-logo.jpeg.asset.json";
 
-const members = [
-  "DARA",
-  "RH7",
-  "ditzyounes",
-  "ZINOX",
-  "BMGT",
-  "Hoops007",
-  "Ayman eB",
-  "Chivasod",
-  "saadouch",
-  "montana",
-  "Vanitas",
-  "PSK-H4CHEM",
-  "Najiiim",
-  "Ayoubelalami01",
-  "MOHAMHAL",
-];
+const membersQuery = queryOptions({
+  queryKey: ["members"],
+  queryFn: () => getMembers(),
+});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,12 +29,17 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(membersQuery),
   component: Index,
+  errorComponent: ({ error }) => <div role="alert" className="p-8 text-center text-foreground">{error.message}</div>,
+  notFoundComponent: () => <div className="p-8 text-center text-foreground">Not found</div>,
 });
 
 function Index() {
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const isArabic = language === "ar";
+  const { data: members } = useSuspenseQuery(membersQuery);
+  const [openId, setOpenId] = useState<number | null>(null);
 
   const copy = isArabic
     ? {
@@ -59,6 +53,9 @@ function Index() {
         switchLabel: "English",
         logoAlt: "شعار مجموعة LKHDMA",
         switchAria: "تغيير اللغة إلى الإنجليزية",
+        debt: "نقاط الدين",
+        tap: "اضغط لعرض الدين",
+        points: "نقطة",
       }
     : {
         subtitle: "Team member rankings and required contribution",
@@ -71,6 +68,9 @@ function Index() {
         switchLabel: "العربية",
         logoAlt: "LKHDMA team logo",
         switchAria: "Switch language to Arabic",
+        debt: "Debt points",
+        tap: "Tap to view debt",
+        points: "pts",
       };
 
   return (
@@ -111,7 +111,7 @@ function Index() {
           </p>
           <div className="mx-auto mt-5 flex w-fit items-center divide-x divide-x-reverse divide-border rounded-md border border-border bg-panel px-1 py-2 shadow-panel backdrop-blur-xl">
             <div className="px-4">
-              <span className="block text-xl font-black text-foreground">15</span>
+              <span className="block text-xl font-black text-foreground">{members.length}</span>
               <span className="text-xs text-muted-foreground">{copy.membersCount}</span>
             </div>
             <div className="px-4">
@@ -130,27 +130,50 @@ function Index() {
           </div>
 
           <ol className="space-y-2.5">
-            {members.map((member, index) => (
-              <li
-                key={member}
-                dir="ltr"
-                className="member-row group grid min-h-18 grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-border bg-panel px-3 py-3 shadow-panel backdrop-blur-xl transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:bg-panel-strong sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:px-4"
-                style={{ animationDelay: `${index * 45}ms` }}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-sm border border-rank-border bg-rank font-display text-sm font-black text-rank-foreground sm:h-11 sm:w-11">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span dir="ltr" className="min-w-0 truncate text-left text-base font-bold text-foreground sm:text-lg">
-                  {member}
-                </span>
-                <div className="text-right" dir={isArabic ? "rtl" : "ltr"}>
-                  <span className="block text-xl font-black text-accent sm:text-2xl">40%</span>
-                  <span className="block whitespace-nowrap text-[10px] font-semibold text-muted-foreground">
-                    {copy.requiredDuty}
-                  </span>
-                </div>
-              </li>
-            ))}
+            {members.map((member, index) => {
+              const open = openId === member.id;
+              return (
+                <li
+                  key={member.id}
+                  className="member-row rounded-md border border-border bg-panel shadow-panel backdrop-blur-xl transition duration-200 hover:border-accent/60 hover:bg-panel-strong"
+                  style={{ animationDelay: `${index * 45}ms` }}
+                >
+                  <button
+                    type="button"
+                    dir="ltr"
+                    aria-expanded={open}
+                    onClick={() => setOpenId(open ? null : member.id)}
+                    className="grid min-h-18 w-full grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:px-4"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-sm border border-rank-border bg-rank font-display text-sm font-black text-rank-foreground sm:h-11 sm:w-11">
+                      {String(member.rank).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-base font-bold text-foreground sm:text-lg">{member.name}</span>
+                      <span className="block text-[10px] font-medium text-muted-foreground" dir={isArabic ? "rtl" : "ltr"}>{copy.tap}</span>
+                    </span>
+                    <div className="text-right" dir={isArabic ? "rtl" : "ltr"}>
+                      <span className="block text-xl font-black text-accent sm:text-2xl">40%</span>
+                      <span className="block whitespace-nowrap text-[10px] font-semibold text-muted-foreground">
+                        {copy.requiredDuty}
+                      </span>
+                    </div>
+                  </button>
+                  {open && (
+                    <div
+                      dir={isArabic ? "rtl" : "ltr"}
+                      className="mx-3 mb-3 flex items-center justify-between rounded-sm border border-primary/40 bg-rank px-4 py-3 sm:mx-4"
+                    >
+                      <span className="text-sm font-bold text-muted-foreground">{copy.debt}</span>
+                      <span className="font-display text-2xl font-black text-primary">
+                        <span dir="ltr">{member.debt.toLocaleString("en-US")}</span>{" "}
+                        <span className="text-xs text-muted-foreground">{copy.points}</span>
+                      </span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </section>
 
