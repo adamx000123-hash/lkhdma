@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      debt_schedule: {
+        Row: {
+          id: number
+          pending_tier: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          pending_tier?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          pending_tier?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           debt: number
@@ -43,7 +61,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      apply_pending_debt: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
