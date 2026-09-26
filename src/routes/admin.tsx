@@ -14,10 +14,12 @@ import {
   getAdminStatus,
   getMembers,
   reduceDebt,
+  addDebt,
 } from "../lib/debts.functions";
 
-const statusQuery = queryOptions({ queryKey: ["admin-status"], queryFn: () => getAdminStatus() });
-const membersQuery = queryOptions({ queryKey: ["members"], queryFn: () => getMembers() });
+const retryOpts = { retry: 3, retryDelay: (attempt: number) => Math.min(500 * 2 ** attempt, 3000) };
+const statusQuery = queryOptions({ queryKey: ["admin-status"], queryFn: () => getAdminStatus(), ...retryOpts });
+const membersQuery = queryOptions({ queryKey: ["members"], queryFn: () => getMembers(), ...retryOpts });
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -99,6 +101,7 @@ function Dashboard() {
   const { data: schedule } = useQuery({ queryKey: ["schedule"], queryFn: () => fetchSchedule() });
   const pending = schedule?.pendingTier ?? null;
   const reduce = useServerFn(reduceDebt);
+  const add = useServerFn(addDebt);
   const logout = useServerFn(adminLogout);
   const [busyTier, setBusyTier] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -117,6 +120,14 @@ function Dashboard() {
     const amount = parseInt(amounts[id] ?? "", 10);
     if (!amount || amount <= 0) return;
     await reduce({ data: { id, amount } });
+    setAmounts((a) => ({ ...a, [id]: "" }));
+    qc.invalidateQueries({ queryKey: ["members"] });
+  }
+
+  async function onAdd(id: number) {
+    const amount = parseInt(amounts[id] ?? "", 10);
+    if (!amount || amount <= 0) return;
+    await add({ data: { id, amount } });
     setAmounts((a) => ({ ...a, [id]: "" }));
     qc.invalidateQueries({ queryKey: ["members"] });
   }
@@ -161,7 +172,7 @@ function Dashboard() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-bold text-foreground">إنقاص الدين عند الدفع</h2>
+        <h2 className="mb-3 text-lg font-bold text-foreground">إضافة و إنقاص النقاط عند الدفع</h2>
         <ul className="space-y-2">
           {members.map((m) => (
             <li
@@ -181,7 +192,10 @@ function Dashboard() {
                 onChange={(e) => setAmounts((a) => ({ ...a, [m.id]: e.target.value }))}
                 className="w-28 bg-background/40"
               />
-              <Button size="sm" variant="secondary" onClick={() => onReduce(m.id)}>إنقاص</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => onReduce(m.id)}>إنقاص</Button>
+                <Button size="sm" variant="secondary" className="bg-success/30 border border-success/50 hover:bg-success/50" onClick={() => onAdd(m.id)}>إضافة</Button>
+              </div>
             </li>
           ))}
         </ul>

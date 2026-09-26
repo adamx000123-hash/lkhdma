@@ -10,6 +10,8 @@ import logoAsset from "../assets/lkhdma-logo.jpeg.asset.json";
 const membersQuery = queryOptions({
   queryKey: ["members"],
   queryFn: () => getMembers(),
+  retry: 3,
+  retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
 });
 
 export const Route = createFileRoute("/")({
