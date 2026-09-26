@@ -191,7 +191,10 @@ function Dashboard() {
                 onChange={(e) => setAmounts((a) => ({ ...a, [m.id]: e.target.value }))}
                 className="w-28 bg-background/40"
               />
-              <Button size="sm" variant="secondary" onClick={() => onReduce(m.id)}>إنقاص</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => onReduce(m.id)}>إنقاص</Button>
+                <Button size="sm" variant="secondary" className="bg-success/30 border border-success/50 hover:bg-success/50" onClick={() => onAdd(m.id)}>إضافة</Button>
+              </div>
             </li>
           ))}
         </ul>
