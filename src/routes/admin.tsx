@@ -17,8 +17,9 @@ import {
   addDebt,
 } from "../lib/debts.functions";
 
-const statusQuery = queryOptions({ queryKey: ["admin-status"], queryFn: () => getAdminStatus() });
-const membersQuery = queryOptions({ queryKey: ["members"], queryFn: () => getMembers() });
+const retryOpts = { retry: 3, retryDelay: (attempt: number) => Math.min(500 * 2 ** attempt, 3000) };
+const statusQuery = queryOptions({ queryKey: ["admin-status"], queryFn: () => getAdminStatus(), ...retryOpts });
+const membersQuery = queryOptions({ queryKey: ["members"], queryFn: () => getMembers(), ...retryOpts });
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
