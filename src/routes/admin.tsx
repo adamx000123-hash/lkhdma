@@ -14,6 +14,7 @@ import {
   getAdminStatus,
   getMembers,
   reduceDebt,
+  addDebt,
 } from "../lib/debts.functions";
 
 const statusQuery = queryOptions({ queryKey: ["admin-status"], queryFn: () => getAdminStatus() });

@@ -123,3 +123,25 @@ export const reduceDebt = createServerFn({ method: "POST" })
       .eq("id", data.id);
     return { ok: true, debt };
   });
+
+export const addDebt = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({ id: z.number().int(), amount: z.number().int().min(1).max(10_000_000) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("members")
+      .select("debt")
+      .eq("id", data.id)
+      .single();
+    if (error || !row) throw new Error("Member not found");
+    const debt = row.debt + data.amount;
+    const { error: updateError } = await supabaseAdmin
+      .from("members")
+      .update({ debt, updated_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (updateError) throw new Error(updateError.message);
+    return { ok: true, debt };
+  });
