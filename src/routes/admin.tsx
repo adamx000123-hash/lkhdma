@@ -100,6 +100,7 @@ function Dashboard() {
   const { data: schedule } = useQuery({ queryKey: ["schedule"], queryFn: () => fetchSchedule() });
   const pending = schedule?.pendingTier ?? null;
   const reduce = useServerFn(reduceDebt);
+  const add = useServerFn(addDebt);
   const logout = useServerFn(adminLogout);
   const [busyTier, setBusyTier] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -118,6 +119,14 @@ function Dashboard() {
     const amount = parseInt(amounts[id] ?? "", 10);
     if (!amount || amount <= 0) return;
     await reduce({ data: { id, amount } });
+    setAmounts((a) => ({ ...a, [id]: "" }));
+    qc.invalidateQueries({ queryKey: ["members"] });
+  }
+
+  async function onAdd(id: number) {
+    const amount = parseInt(amounts[id] ?? "", 10);
+    if (!amount || amount <= 0) return;
+    await add({ data: { id, amount } });
     setAmounts((a) => ({ ...a, [id]: "" }));
     qc.invalidateQueries({ queryKey: ["members"] });
   }
