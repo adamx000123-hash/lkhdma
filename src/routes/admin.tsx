@@ -171,7 +171,7 @@ function Dashboard() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-bold text-foreground">إنقاص الدين عند الدفع</h2>
+        <h2 className="mb-3 text-lg font-bold text-foreground">إضافة و إنقاص النقاط عند الدفع</h2>
         <ul className="space-y-2">
           {members.map((m) => (
             <li
